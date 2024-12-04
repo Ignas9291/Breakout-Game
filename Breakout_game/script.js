@@ -16,7 +16,7 @@ const ball = {
   leftCornerX: (canvas.width/2) + Math.floor(Math.random()*41)-10,
   leftCornerY: (canvas.height-30) + Math.floor(Math.random()*41)-10,
   size: 34,
-  speed: 3,
+  speed: 1,
   horizontalMovementDirection: 1, // default right
   verticalMovementDirection: -1,  // default up
   img: (function() {
@@ -30,7 +30,7 @@ var x = (canvas.width/2) + Math.floor(Math.random()*41)-10;
 var y = (canvas.height-30) + Math.floor(Math.random()*41)-10;;
 var dx = ball.speed;
 var dy = -1*ball.speed;
-var ballRadius = 34;
+var ballRadius = ball.size;
 var paddleHeight = 10;
 var paddleWidth = 75;
 var paddleX = (canvas.width - paddleWidth)/2;
@@ -126,26 +126,23 @@ function drawPaddle(){
   ctx.closePath();
 }
 
-function collisionDetect(){
+function ballBrickCollision(){
   for (c = 0; c < brickColumnCount; c++) {
     for (r = 0; r < brickRowCount; r++) {
       var b = bricks[c][r];
       if (b.status == 1) {
-		  			console.log("x + ballRadius: " + (x + ballRadius));
-					console.log("x + ballRadius: " + (x + ballRadius));
-
         if (
 		    x + ballRadius > b.x &&    // Ball's right edge overlaps brick's left edge
 			x - ballRadius < b.x + brickWidth && // Ball's left edge overlaps brick's right edge
 			y + ballRadius > b.y &&    // Ball's bottom edge overlaps brick's top edge
-			y - ballRadius < b.y + brickHeight  // Ball's top edge overlaps brick's bottom edge			
+			y < b.y + brickHeight  // Ball's top edge overlaps brick's bottom edge			
 		) {
-		  brickHit.play();	
+		  //brickHit.play();	
           dy = -dy;
           b.status = 0;
-          score++;		  
+          score++;		 
 
-          if (score == 3 /*brickRowCount*brickColumnCount*/){
+          if (score == brickRowCount*brickColumnCount){
             if (level === maxLevel){
               alert("Victory!");
               document.location.reload();
@@ -200,8 +197,10 @@ function drawLevel(){
 function resetGameState() {
     lives--; // Decrease the number of lives
     // Reset ball position
-    x = (canvas.width / 2) + Math.floor(Math.random() * 41) - 10;
-    y = (canvas.height - 30) + Math.floor(Math.random() * 41) - 10;
+    x = (canvas.width / 2) + Math.floor(Math.random() * 41) - 10; // Random x near center
+    y = (canvas.height - ball.size) + Math.floor(Math.random() * 31) + 10;
+	dx = ball.speed; // Horizontal speed
+    dy = -ball.speed; // Vertical speed (negative to move up)
     // Reset paddle position
     paddleX = (canvas.width - paddleWidth) / 2;
 }
@@ -210,13 +209,19 @@ function handleBallMovement() {
 	x += dx;
 	y += dy;
 	
-	  // Ball collisions with top and paddle
+	  // Ball collisions with top canvas
   if (y + dy < ballRadius) {
     dy = -dy;  // Bounce off the top
-  } else if (y + dy > canvas.height - ballRadius) {
+
+  } else if (y + dy > canvas.height - ballRadius - paddleHeight) {
     if (x > paddleX && x < paddleX + paddleWidth) {
-	bounceSound.play()
+	//bounceSound.play() 
       dy = -dy;  // Ball hits the paddle
+	
+      console.log("paddle y: " + (10));
+
+	  console.log("y + ballRadius: " + (y + ballRadius));
+
     } else {
 		if (!lives){
         document.location.reload();
@@ -225,10 +230,11 @@ function handleBallMovement() {
     }
   }
 
-  // Ball collisions with left and right boundaries
-  if ((x + dx + ballRadius / 2 < 0) || (x + (ballRadius / 2) + dx > canvas.width)) {
-    dx = -dx;  // Ball bounces off the left or right side
-  }
+  // Ball collisions with left and right wall's boundaries
+	if ((x + dx < 0) || (x + dx + ballRadius > canvas.width)) { 
+		dx = -dx;  // Ball bounces off the left or right side
+	}
+
 }
 
 function handlePaddleMovement() {
@@ -247,7 +253,7 @@ function draw(){
   drawScore();
   drawLives();
   drawLevel();
-  collisionDetect();
+  ballBrickCollision();
   handleBallMovement()
   handlePaddleMovement()
     
