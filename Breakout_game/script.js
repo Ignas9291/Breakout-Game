@@ -9,26 +9,27 @@ var next_level_background = new Image();
 var background = new Image();
 	background.src = "background.jpg";
 
-var bounceSound = new Audio('ball_bounce.wav');
+var bounceSound = new Audio('ball_bounce.mp3');
 var brickHit = new Audio('brick_hit.mp3');
 
 const ball = {
-  leftCornerX: (canvas.width/2) + Math.floor(Math.random()*41)-10,
-  leftCornerY: (canvas.height-30) + Math.floor(Math.random()*41)-10,
+  leftCornerX: canvas.width / 2,
+  leftCornerY: canvas.height / 2,
   size: 34,
-  speed: 1,
+  speed: 4 ,
   horizontalMovementDirection: 1, // default right
-  verticalMovementDirection: -1,  // default up
-  img: (function() {
-    var img = new Image();
-    img.src = 'ball.jpg';
+  verticalMovementDirection: -1, // default up
+  img: (() => {
+    const img = new Image();
+    img.src = 'ball.png';
     return img;
-  })()
+  })(),
 };
 
 var x = (canvas.width/2) + Math.floor(Math.random()*41)-10;
-var y = (canvas.height-30) + Math.floor(Math.random()*41)-10;;
-var dx = ball.speed;
+var y = (canvas.height-ball.size) - Math.floor(Math.random()*41)-10;
+console.log("canvas.height: "+canvas.height);
+var dx = (Math.random() < 0.5 ? -1 : 1) * ball.speed; // generate random x startup movement
 var dy = -1*ball.speed;
 var ballRadius = ball.size;
 var paddleHeight = 10;
@@ -142,7 +143,7 @@ function ballBrickCollision(){
           b.status = 0;
           score++;		 
 
-          if (score == brickRowCount*brickColumnCount){
+          if (score == 3 /*brickRowCount*brickColumnCount*/){
             if (level === maxLevel){
               alert("Victory!");
               document.location.reload();
@@ -196,11 +197,14 @@ function drawLevel(){
 
 function resetGameState() {
     lives--; // Decrease the number of lives
-    // Reset ball position
-    x = (canvas.width / 2) + Math.floor(Math.random() * 41) - 10; // Random x near center
-    y = (canvas.height - ball.size) + Math.floor(Math.random() * 31) + 10;
-	dx = ball.speed; // Horizontal speed
+
+    // Reset ball position safely, ensuring it stays well above the paddle and not near edges
+    x = canvas.width / 2;  // Center horizontally
+    y = canvas.height / 2; // Reset above the paddle area
+
+    dx = ball.speed * (Math.random() < 0.5 ? 1 : -1); // Randomize horizontal direction
     dy = -ball.speed; // Vertical speed (negative to move up)
+
     // Reset paddle position
     paddleX = (canvas.width - paddleWidth) / 2;
 }
@@ -215,20 +219,18 @@ function handleBallMovement() {
 
   } else if (y + dy > canvas.height - ballRadius - paddleHeight) {
     if (x > paddleX && x < paddleX + paddleWidth) {
-	//bounceSound.play() 
-      dy = -dy;  // Ball hits the paddle
-	
-      console.log("paddle y: " + (10));
-
-	  console.log("y + ballRadius: " + (y + ballRadius));
-
+        dy = -dy;  // Ball hits the paddle
+        // Optionally, adjust dx based on where the ball hits the paddle for realistic physics
+        const paddleCenter = paddleX + paddleWidth / 2;
+        dx += (x - paddleCenter) * 0.05; // Adjust direction slightly
     } else {
-		if (!lives){
-        document.location.reload();
-		}
-      resetGameState();
+        if (!lives) {
+            document.location.reload(); // Game over
+        }
+        resetGameState(); // Ball reset on life loss
     }
-  }
+}
+
 
   // Ball collisions with left and right wall's boundaries
 	if ((x + dx < 0) || (x + dx + ballRadius > canvas.width)) { 
